@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://you-blush-nine.vercel.app/sitemap.xml
+Sitemap: https://tik-tok-omega-two.vercel.app/sitemap.xml
