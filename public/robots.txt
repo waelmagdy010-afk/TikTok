@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://you-blush-nine.vercel.app/sitemap.xml
