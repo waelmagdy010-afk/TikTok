@@ -382,19 +382,6 @@ export default function App() {
     }
   }, [adConfig]);
 
-  useEffect(() => {
-    const checkAdminHash = () => {
-      if (window.location.hash === '#admin') {
-        setShowAdmin(true);
-        // Remove the hash from URL after checking so it remains hidden
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      }
-    };
-    checkAdminHash();
-    window.addEventListener('hashchange', checkAdminHash);
-    return () => window.removeEventListener('hashchange', checkAdminHash);
-  }, []);
-
   const text = TRANSLATIONS[lang];
   const currentNiches = NICHES[lang];
   const niche = currentNiches.find(n => n.id === nicheId) || currentNiches[0];
@@ -424,6 +411,7 @@ export default function App() {
   };
 
   const ttWins = results && results.ttTotal > results.ytTotal;
+  const isDevEnvironment = import.meta.env.DEV || window.location.hostname.includes('ais-dev');
 
   return (
     <div className="font-sans flex flex-col min-h-screen overflow-x-hidden bg-gray-50 text-gray-900 dark:bg-[#050505] dark:text-[#F3F4F6] transition-colors duration-300">
@@ -442,6 +430,15 @@ export default function App() {
         </div>
         
         <div className="flex gap-2">
+          {isDevEnvironment && (
+            <button 
+              onClick={() => setShowAdmin(true)}
+              className="p-2 rounded-full bg-[#FF004F]/10 text-[#FF004F] hover:bg-[#FF004F]/20 transition-colors"
+              title="Ads Admin (Dev Only)"
+            >
+              <Settings size={16} />
+            </button>
+          )}
           <button 
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="p-2 rounded-full bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-black/10 dark:hover:bg-white/20 transition-colors"
