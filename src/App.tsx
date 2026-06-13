@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
-import { Moon, Sun, Languages } from "lucide-react";
+import { Moon, Sun, Languages, Settings, CheckCircle, XCircle, X } from "lucide-react";
 
 type Lang = "ar" | "en" | "es" | "fr";
 type Theme = "dark" | "light";
+
+interface AdConfig {
+  enabled: boolean;
+  networkName: string;
+  scriptUrl: string;
+  zoneId: string;
+}
 
 const NICHES = {
   ar: [
@@ -294,6 +301,12 @@ const SliderInput = ({ label, value, min, max, step, onChange, display, sublabel
 export default function App() {
   const [lang, setLang] = useState<Lang>("ar");
   const [theme, setTheme] = useState<Theme>("dark");
+  const [adConfig, setAdConfig] = useState<AdConfig>(() => {
+    const saved = localStorage.getItem("siteAdConfig");
+    return saved ? JSON.parse(saved) : { enabled: true, networkName: "Monetag (Quges)", scriptUrl: "https://quge5.com/88/tag.min.js", zoneId: "249378" };
+  });
+  const [showAdmin, setShowAdmin] = useState(false);
+
   const [followers, setFollowers] = useState(100000);
   const [avgViews, setAvgViews] = useState(50000);
   const [nicheId, setNicheId] = useState("entertainment");
@@ -343,6 +356,44 @@ export default function App() {
       descMeta.setAttribute("content", seo.desc);
     }
   }, [lang]);
+
+  useEffect(() => {
+    localStorage.setItem("siteAdConfig", JSON.stringify(adConfig));
+
+    const scriptId = "dynamic-ad-script";
+    const existingScript = document.getElementById(scriptId);
+
+    if (adConfig.enabled) {
+      if (!existingScript || existingScript.getAttribute("src") !== adConfig.scriptUrl || existingScript.getAttribute("data-zone") !== adConfig.zoneId) {
+        if (existingScript) existingScript.remove();
+        
+        const script = document.createElement("script");
+        script.id = scriptId;
+        script.src = adConfig.scriptUrl;
+        script.setAttribute("data-zone", adConfig.zoneId);
+        script.async = true;
+        script.setAttribute("data-cfasync", "false");
+        document.head.appendChild(script);
+      }
+    } else {
+      if (existingScript) {
+        existingScript.remove();
+      }
+    }
+  }, [adConfig]);
+
+  useEffect(() => {
+    const checkAdminHash = () => {
+      if (window.location.hash === '#admin') {
+        setShowAdmin(true);
+        // Remove the hash from URL after checking so it remains hidden
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    checkAdminHash();
+    window.addEventListener('hashchange', checkAdminHash);
+    return () => window.removeEventListener('hashchange', checkAdminHash);
+  }, []);
 
   const text = TRANSLATIONS[lang];
   const currentNiches = NICHES[lang];
@@ -629,6 +680,87 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Admin Modal */}
+      {showAdmin && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/10 p-8 w-full max-w-md relative rounded-3xl shadow-2xl">
+            <button 
+              onClick={() => setShowAdmin(false)}
+              className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-gray-900 dark:text-white">
+              <Settings size={22} className="text-[#FF004F]"/>
+              Ads Management
+            </h2>
+            
+            <div className="space-y-6">
+              {/* Status Card */}
+              <div className="flex items-center justify-between p-5 bg-gray-50 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 mb-2">
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Ad Network</div>
+                  <div className="font-bold text-sm text-gray-900 dark:text-white">{adConfig.networkName || "Unnamed Network"}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Status</div>
+                  {adConfig.enabled ? (
+                    <span className="flex items-center justify-end gap-1.5 text-green-600 dark:text-green-400 text-xs font-bold uppercase"><CheckCircle size={14}/> Active</span>
+                  ) : (
+                    <span className="flex items-center justify-end gap-1.5 text-red-600 dark:text-red-400 text-xs font-bold uppercase"><XCircle size={14}/> Paused</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Form Fields */}
+              <div className="space-y-4 pt-2 border-t border-black/5 dark:border-white/5">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-gray-500 mb-1.5 flex items-center gap-2">Network Name</label>
+                  <input 
+                    type="text" 
+                    value={adConfig.networkName}
+                    onChange={(e) => setAdConfig({...adConfig, networkName: e.target.value})}
+                    placeholder="e.g. Monetag Popunder"
+                    className="w-full text-sm p-3 bg-gray-50 dark:bg-[#111] border border-black/10 dark:border-white/10 rounded-xl focus:border-[#FF004F] outline-none transition-colors dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Ad Script URL</label>
+                  <input 
+                    type="text" 
+                    value={adConfig.scriptUrl}
+                    onChange={(e) => setAdConfig({...adConfig, scriptUrl: e.target.value})}
+                    placeholder="https://quge5.com/88/tag.min.js"
+                    className="w-full text-sm p-3 bg-gray-50 dark:bg-[#111] border border-black/10 dark:border-white/10 rounded-xl focus:border-[#FF004F] outline-none transition-colors dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-gray-500 mb-1.5">Zone ID</label>
+                  <input 
+                    type="text" 
+                    value={adConfig.zoneId}
+                    onChange={(e) => setAdConfig({...adConfig, zoneId: e.target.value})}
+                    placeholder="249378"
+                    className="w-full text-sm p-3 bg-gray-50 dark:bg-[#111] border border-black/10 dark:border-white/10 rounded-xl focus:border-[#FF004F] outline-none transition-colors dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setAdConfig({...adConfig, enabled: !adConfig.enabled})}
+                className={`w-full py-4 mt-2 rounded-xl text-sm font-bold uppercase tracking-widest transition-all shadow-sm hover:shadow-md outline-none ${
+                  adConfig.enabled 
+                    ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 border border-red-200 dark:border-red-900/30' 
+                    : 'bg-gradient-to-r from-[#FF004F] to-[#CC003D] text-white hover:scale-[1.02] active:scale-95'
+                }`}
+              >
+                {adConfig.enabled ? 'Pause Ads' : 'Activate Ads'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </div>
   );
